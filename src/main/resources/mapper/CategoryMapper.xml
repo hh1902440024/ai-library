@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.library.mapper.CategoryMapper">
+
+    <resultMap id="VoResultMap" type="com.library.dto.CategoryVO">
+        <id column="id" property="id"/>
+        <result column="name" property="name"/>
+        <result column="book_count" property="bookCount"/>
+    </resultMap>
+
+    <!-- 分类列表（含图书数量） -->
+    <select id="findAll" resultMap="VoResultMap">
+        SELECT c.id, c.name, COUNT(b.id) AS book_count
+        FROM category c
+        LEFT JOIN book b ON b.category_id = c.id
+        GROUP BY c.id, c.name
+        ORDER BY c.id
+    </select>
+
+    <select id="findVoById" resultMap="VoResultMap">
+        SELECT c.id, c.name, COUNT(b.id) AS book_count
+        FROM category c
+        LEFT JOIN book b ON b.category_id = c.id
+        WHERE c.id = #{id}
+        GROUP BY c.id, c.name
+    </select>
+
+    <select id="countBooks" resultType="int">
+        SELECT COUNT(*) FROM book WHERE category_id = #{categoryId}
+    </select>
+
+    <insert id="insert" parameterType="com.library.entity.Category" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO category (name) VALUES (#{name})
+    </insert>
+
+    <update id="updateById" parameterType="com.library.entity.Category">
+        UPDATE category SET name = #{name} WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM category WHERE id = #{id}
+    </delete>
+
+</mapper>
