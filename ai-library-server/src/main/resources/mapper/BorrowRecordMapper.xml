@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.library.mapper.BorrowRecordMapper">
+
+    <resultMap id="VoResultMap" type="com.library.dto.BorrowVO">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="username" property="username"/>
+        <result column="book_id" property="bookId"/>
+        <result column="book_title" property="bookTitle"/>
+        <result column="book_cover" property="bookCover"/>
+        <result column="book_isbn" property="bookIsbn"/>
+        <result column="category_name" property="categoryName"/>
+        <result column="borrow_time" property="borrowTime"/>
+        <result column="due_time" property="dueTime"/>
+        <result column="return_time" property="returnTime"/>
+        <result column="status" property="status"/>
+        <result column="overdue" property="overdue"/>
+    </resultMap>
+
+    <sql id="Vo_Select">
+        SELECT r.id, r.user_id, u.username, r.book_id, b.title AS book_title,
+               b.cover AS book_cover, b.isbn AS book_isbn,
+               c.name AS category_name, r.borrow_time, r.due_time, r.return_time, r.status,
+               (r.status = 0 AND r.due_time &lt; NOW()) AS overdue
+        FROM borrow_record r
+        LEFT JOIN book b ON b.id = r.book_id
+        LEFT JOIN category c ON c.id = b.category_id
+        LEFT JOIN user u ON u.id = r.user_id
+    </sql>
+
+    <sql id="Query_Condition">
+        <where>
+            <if test="userId != null">AND r.user_id = #{userId}</if>
+            <if test="status != null">AND r.status = #{status}</if>
+            <if test="keyword != null and keyword != ''">
+                AND (b.title LIKE CONCAT('%', #{keyword}, '%') OR u.username LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+        </where>
+    </sql>
+
+    <insert id="insert" parameterType="com.library.entity.BorrowRecord" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO borrow_record (user_id, book_id, borrow_time, due_time, status)
+        VALUES (#{userId}, #{bookId}, #{borrowTime}, #{dueTime}, #{status})
+    </insert>
+
+    <select id="findById" resultType="com.library.entity.BorrowRecord">
+        SELECT id, user_id, book_id, borrow_time, due_time, return_time, status
+        FROM borrow_record
+        WHERE id = #{id}
+    </select>
+
+    <update id="updateReturn" parameterType="com.library.entity.BorrowRecord">
+        UPDATE borrow_record
+        SET return_time = #{returnTime}, status = #{status}
+        WHERE id = #{id}
+    </update>
+
+    <select id="findByQuery" parameterType="com.library.dto.BorrowQuery" resultMap="VoResultMap">
+        <include refid="Vo_Select"/>
+        <include refid="Query_Condition"/>
+        ORDER BY r.id DESC
+    </select>
+
+    <select id="findForExport" parameterType="com.library.dto.BorrowQuery" resultMap="VoResultMap">
+        <include refid="Vo_Select"/>
+        <include refid="Query_Condition"/>
+        ORDER BY r.id DESC
+    </select>
+
+    <select id="countActiveByBook" resultType="int">
+        SELECT COUNT(*) FROM borrow_record WHERE book_id = #{bookId} AND status = 0
+    </select>
+
+    <select id="countActiveByUser" resultType="int">
+        SELECT COUNT(*) FROM borrow_record WHERE user_id = #{userId} AND status = 0
+    </select>
+
+    <!-- 逾期未还：超期未标记（status=0 且过应还时间）或已被定时任务标记（status=2 且未归还） -->
+    <select id="countBlockingOverdue" resultType="int">
+        SELECT COUNT(*) FROM borrow_record
+        WHERE user_id = #{userId}
+          AND ((status = 0 AND due_time &lt; NOW()) OR (status = 2 AND return_time IS NULL))
+    </select>
+
+    <!-- 定时任务：将超期未还的借出记录批量标记为逾期 -->
+    <update id="markOverdue">
+        UPDATE borrow_record
+        SET status = 2
+        WHERE status = 0 AND due_time &lt; NOW()
+    </update>
+
+    <select id="findRecentByUser" resultMap="VoResultMap">
+        <include refid="Vo_Select"/>
+        WHERE r.user_id = #{userId}
+        ORDER BY r.borrow_time DESC
+        LIMIT #{limit}
+    </select>
+
+</mapper>

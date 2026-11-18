@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.library.mapper.BookMapper">
+
+    <resultMap id="BaseResultMap" type="com.library.entity.Book">
+        <id column="id" property="id"/>
+        <result column="isbn" property="isbn"/>
+        <result column="title" property="title"/>
+        <result column="author" property="author"/>
+        <result column="publisher" property="publisher"/>
+        <result column="category_id" property="categoryId"/>
+        <result column="cover" property="cover"/>
+        <result column="description" property="description"/>
+        <result column="tags" property="tags"/>
+        <result column="total_stock" property="totalStock"/>
+        <result column="available_stock" property="availableStock"/>
+        <result column="publish_date" property="publishDate"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, isbn, title, author, publisher, category_id, cover, description, tags,
+        total_stock, available_stock, publish_date, create_time, update_time
+    </sql>
+
+    <insert id="insert" parameterType="com.library.entity.Book" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO book (isbn, title, author, publisher, category_id, cover, description, tags,
+                          total_stock, available_stock, publish_date)
+        VALUES (#{isbn}, #{title}, #{author}, #{publisher}, #{categoryId}, #{cover}, #{description}, #{tags},
+                #{totalStock}, #{totalStock}, #{publishDate})
+    </insert>
+
+    <update id="updateById" parameterType="com.library.entity.Book">
+        UPDATE book
+        <set>
+            <if test="isbn != null">isbn = #{isbn},</if>
+            <if test="title != null">title = #{title},</if>
+            <if test="author != null">author = #{author},</if>
+            <if test="publisher != null">publisher = #{publisher},</if>
+            <if test="categoryId != null">category_id = #{categoryId},</if>
+            <if test="cover != null">cover = #{cover},</if>
+            <if test="description != null">description = #{description},</if>
+            <if test="tags != null">tags = #{tags},</if>
+            <if test="totalStock != null">total_stock = #{totalStock},</if>
+            <if test="publishDate != null">publish_date = #{publishDate},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM book WHERE id = #{id}
+    </delete>
+
+    <select id="findById" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM book
+        WHERE id = #{id}
+    </select>
+
+    <select id="findByIsbn" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM book
+        WHERE isbn = #{isbn}
+    </select>
+
+    <!-- 详情 / 列表：联表分类名 -->
+    <sql id="Vo_Select">
+        SELECT b.id, b.isbn, b.title, b.author, b.publisher, b.category_id, c.name AS category_name,
+               b.cover, b.description, b.tags, b.total_stock, b.available_stock, b.publish_date, b.create_time
+        FROM book b
+        LEFT JOIN category c ON c.id = b.category_id
+    </sql>
+
+    <resultMap id="VoResultMap" type="com.library.dto.BookVO">
+        <id column="id" property="id"/>
+        <result column="isbn" property="isbn"/>
+        <result column="title" property="title"/>
+        <result column="author" property="author"/>
+        <result column="publisher" property="publisher"/>
+        <result column="category_id" property="categoryId"/>
+        <result column="category_name" property="categoryName"/>
+        <result column="cover" property="cover"/>
+        <result column="description" property="description"/>
+        <result column="tags" property="tags"/>
+        <result column="total_stock" property="totalStock"/>
+        <result column="available_stock" property="availableStock"/>
+        <result column="publish_date" property="publishDate"/>
+        <result column="create_time" property="createTime"/>
+    </resultMap>
+
+    <select id="findVoById" resultMap="VoResultMap">
+        <include refid="Vo_Select"/>
+        WHERE b.id = #{id}
+    </select>
+
+    <!-- 多条件分页查询：#{xxx} 预编译传参，防 SQL 注入 -->
+    <select id="findVoByQuery" parameterType="com.library.dto.BookQuery" resultMap="VoResultMap">
+        <include refid="Vo_Select"/>
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (b.title LIKE CONCAT('%', #{keyword}, '%')
+                  OR b.author LIKE CONCAT('%', #{keyword}, '%')
+                  OR b.tags LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+            <if test="categoryId != null">AND b.category_id = #{categoryId}</if>
+            <if test="available != null and available">AND b.available_stock &gt; 0</if>
+        </where>
+        ORDER BY b.id DESC
+    </select>
+
+    <!-- AI 馆藏检索：模糊匹配 + 可借库存优先 -->
+    <select id="searchForRag" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM book
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (title LIKE CONCAT('%', #{keyword}, '%')
+                  OR author LIKE CONCAT('%', #{keyword}, '%')
+                  OR tags LIKE CONCAT('%', #{keyword}, '%')
+                  OR description LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+            <if test="categoryId != null">AND category_id = #{categoryId}</if>
+        </where>
+        ORDER BY available_stock DESC, id DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 乐观扣减库存：WHERE 条件防超卖 -->
+    <update id="decreaseStock">
+        UPDATE book
+        SET available_stock = available_stock - 1
+        WHERE id = #{bookId} AND available_stock &gt; 0
+    </update>
+
+    <update id="increaseStock">
+        UPDATE book
+        SET available_stock = available_stock + 1
+        WHERE id = #{bookId} AND available_stock &lt; total_stock
+    </update>
+
+    <update id="adjustStock">
+        UPDATE book
+        SET available_stock = available_stock + #{delta}
+        WHERE id = #{id}
+    </update>
+
+    <!-- 热门图书：按借阅量降序 -->
+    <select id="findHotBooks" resultMap="VoResultMap">
+        SELECT b.id, b.isbn, b.title, b.author, b.publisher, b.category_id, c.name AS category_name,
+               b.cover, b.description, b.tags, b.total_stock, b.available_stock, b.publish_date, b.create_time
+        FROM book b
+        LEFT JOIN category c ON c.id = b.category_id
+        LEFT JOIN borrow_record r ON r.book_id = b.id
+        GROUP BY b.id, b.isbn, b.title, b.author, b.publisher, b.category_id, c.name,
+                 b.cover, b.description, b.tags, b.total_stock, b.available_stock, b.publish_date, b.create_time
+        ORDER BY COUNT(r.id) DESC, b.id DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 同分类推荐：排除自身，可借优先 -->
+    <select id="findSimilarBooks" resultMap="VoResultMap">
+        <include refid="Vo_Select"/>
+        WHERE b.category_id = #{categoryId} AND b.id != #{id}
+        ORDER BY b.available_stock DESC, b.id DESC
+        LIMIT #{limit}
+    </select>
+
+</mapper>

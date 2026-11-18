@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="560" viewBox="0 0 400 560" font-family="'Microsoft YaHei','PingFang SC','Noto Sans CJK SC','Helvetica Neue',Arial,sans-serif">
+<rect width="400" height="560" fill="#1B4638"/>
+<g opacity="0.13"><g fill="#64C08A"><rect x="240" y="430" width="12" height="44" rx="3"/><rect x="268" y="396" width="12" height="78" rx="3"/><rect x="296" y="416" width="12" height="58" rx="3"/><rect x="324" y="370" width="12" height="104" rx="3"/><rect x="352" y="404" width="12" height="70" rx="3"/><rect x="380" y="382" width="12" height="92" rx="3"/></g></g>
+<rect x="0" y="0" width="14" height="560" fill="#12332A"/>
+<rect x="14" y="0" width="3" height="560" fill="#000000" opacity="0.22"/>
+<text x="46" y="66" font-size="15" fill="#64C08A" letter-spacing="4">经济管理</text>
+<line x1="46" y1="82" x2="354" y2="82" stroke="#64C08A" stroke-width="1" opacity="0.45"/>
+<text x="46" y="219.9" font-size="38" font-weight="500" fill="#FFFFFF">滚雪球：巴菲特和</text><text x="46" y="272.3" font-size="38" font-weight="500" fill="#FFFFFF">他的财富人生</text>
+<rect x="46" y="314.4" width="46" height="4" rx="2" fill="#64C08A"/>
+<text x="46" y="358.4" font-size="20" fill="#FFFFFF" opacity="0.88">艾丽斯·施罗德</text>
+<text x="46" y="506" font-size="15" fill="#FFFFFF" opacity="0.55">中信出版社</text>
+<text x="354" y="506" font-size="13" fill="#FFFFFF" opacity="0.34" text-anchor="end">AI 智能书屋</text>
+<text x="354" y="530" font-size="11" fill="#FFFFFF" opacity="0.26" text-anchor="end">9787508613298</text>
+</svg>

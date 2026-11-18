@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.library.mapper.StatsMapper">
+
+    <select id="countUsers" resultType="long">
+        SELECT COUNT(*) FROM user
+    </select>
+
+    <select id="countBooks" resultType="long">
+        SELECT COUNT(*) FROM book
+    </select>
+
+    <select id="countBorrows" resultType="long">
+        SELECT COUNT(*) FROM borrow_record WHERE status = #{status}
+    </select>
+
+    <select id="countOverdue" resultType="long">
+        SELECT COUNT(*) FROM borrow_record
+        WHERE (status = 0 AND due_time &lt; NOW()) OR (status = 2 AND return_time IS NULL)
+    </select>
+
+    <!-- 近 30 天借阅趋势（无数据的日期由 Service 补零） -->
+    <select id="borrowTrend" resultType="map">
+        SELECT DATE_FORMAT(borrow_time, '%Y-%m-%d') AS date, COUNT(*) AS count
+        FROM borrow_record
+        WHERE borrow_time &gt;= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+        GROUP BY DATE_FORMAT(borrow_time, '%Y-%m-%d')
+        ORDER BY date
+    </select>
+
+    <!-- 分类借阅占比 -->
+    <select id="categoryBorrowStats" resultType="map">
+        SELECT c.name AS name, COUNT(r.id) AS value
+        FROM borrow_record r
+        JOIN book b ON b.id = r.book_id
+        JOIN category c ON c.id = b.category_id
+        GROUP BY c.name
+        ORDER BY value DESC
+    </select>
+
+    <!-- 热门图书 Top N（按借阅次数） -->
+    <select id="hotBooks" resultType="map">
+        SELECT b.title AS title, COUNT(r.id) AS borrowCount
+        FROM borrow_record r
+        JOIN book b ON b.id = r.book_id
+        GROUP BY b.id, b.title
+        ORDER BY borrowCount DESC
+        LIMIT #{limit}
+    </select>
+
+</mapper>

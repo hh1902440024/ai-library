@@ -1,0 +1,35 @@
+# ---- 只提交这两个目录，其余（README、设计方案、.workbuddy 等）不进入仓库 ----
+/*
+!/.gitignore
+!/ai-library-server/
+!/ai-library-web/
+
+# ---- Java / Maven (ai-library-server) ----
+target/
+*.class
+*.jar
+!.mvn/wrapper/maven-wrapper.jar
+
+# ---- Node (ai-library-web) ----
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# ---- 上传文件与日志 ----
+upload/
+logs/
+*.log
+
+# ---- 本地密钥配置（绝不提交）----
+application-secret.yml
+
+# ---- IDE ----
+.idea/
+*.iml
+.vscode/
+!.vscode/extensions.json
+
+# ---- 系统杂项 ----
+.DS_Store
+Thumbs.db
